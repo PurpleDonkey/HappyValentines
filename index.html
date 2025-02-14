@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valentine's Quest</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #fff; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const playerSpriteRight = new Image();
+        const playerSpriteLeft = new Image();
+        const playerSpriteRightWalk = new Image();
+        const playerSpriteLeftWalk = new Image();
+        const playerSpriteWithFlowersLeft = new Image();
+        const playerSpriteWithFlowersRight = new Image();
+        const npcSprite = new Image();
+        const backgroundImage = new Image();
+
+        playerSpriteRight.src = 'H_right.png';
+        playerSpriteLeft.src = 'H_left.png';
+        playerSpriteRightWalk.src = 'H.walk_right.gif';
+        playerSpriteLeftWalk.src = 'H.walk_left.gif';
+        playerSpriteWithFlowersLeft.src = 'H.flowers_left.png';
+        playerSpriteWithFlowersRight.src = 'H.flowers_right.png';
+        npcSprite.src = 'Tall - S.png';
+        backgroundImage.src = '4.jpg';
+
+        let walkableHeight;
+        let floorY;
+
+        let player = {
+            x: 100,
+            y: 0,
+            width: 280,
+            height: 280,
+            speed: 5,
+            facing: 'right',
+            walking: false,
+            withFlowers: false,
+            minY: 0,
+            maxY: 0,
+            minX: 0,
+            maxX: 0
+        };
+
+        let npc = { x: 0, y: 0, width: 360, height: 360 };
+        let dialogueActive = false;
+
+        let keys = {};
+        window.addEventListener("keydown", (e) => {
+            keys[e.key] = true;
+            if (e.key === "a") player.facing = 'left';
+            if (e.key === "d") player.facing = 'right';
+        });
+        window.addEventListener("keyup", (e) => delete keys[e.key]);
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            walkableHeight = canvas.height * 0.4;
+            floorY = canvas.height - walkableHeight;
+
+            player.minY = floorY - player.height;
+            player.maxY = canvas.height - player.height;
+
+            player.y = canvas.height * 0.6;
+            player.maxX = canvas.width - player.width;
+            player.minX = 0;
+
+            npc.y = canvas.height * 0.6;
+            npc.x = canvas.width - npc.width - 50;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        function update() {
+            player.walking = false;
+            if (keys["a"] && player.x > player.minX) {
+                player.x -= player.speed;
+                player.walking = true;
+            }
+            if (keys["d"] && player.x < player.maxX) {
+                player.x += player.speed;
+                player.walking = true;
+            }
+            if (keys["w"] && player.y > player.minY) {
+                player.y -= player.speed;
+                player.walking = true;
+            }
+            if (keys["s"] && player.y < player.maxY) {
+                player.y += player.speed;
+                player.walking = true;
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+
+            let entities = [player, npc];
+            entities.sort((a, b) => a.y - b.y);
+
+            entities.forEach(entity => {
+                if (entity === player) {
+                    let sprite;
+                    if (player.withFlowers) {
+                        sprite = player.facing === 'right' ? playerSpriteWithFlowersRight : playerSpriteWithFlowersLeft;
+                    } else if (player.walking) {
+                        sprite = player.facing === 'right' ? playerSpriteRightWalk : playerSpriteLeftWalk;
+                    } else {
+                        sprite = player.facing === 'right' ? playerSpriteRight : playerSpriteLeft;
+                    }
+                    ctx.drawImage(sprite, entity.x, entity.y, entity.width, entity.height);
+                } else {
+                    ctx.drawImage(npcSprite, entity.x, entity.y - entity.height + 200, entity.width, entity.height);
+                }
+            });
+
+            if (dialogueActive) {
+                const boxWidth = 600;
+                const boxHeight = 150;
+                const boxX = npc.x - boxWidth + 10;
+                const boxY = npc.y - npc.height - 10;
+
+                ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 20);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = "black";
+                ctx.font = "20px Arial";
+                ctx.fillText("Hi Hannah!, I know it wouldn't be possible for us to meet this", boxX + 20, boxY + 40);
+                ctx.fillText("Valentine's Day but I still want to give you something special.", boxX + 20, boxY + 70);
+                ctx.fillText("Happy Valentine's!", boxX + 20, boxY + 100);
+            }
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.addEventListener("keydown", (e) => {
+            if (e.key === " ") {
+                if (Math.abs(player.x - npc.x) < 100 && Math.abs(player.y - npc.y) < 100) {
+                    dialogueActive = true;
+                    player.withFlowers = true;
+                }
+            }
+            if (e.key === "x") {
+                dialogueActive = false;
+            }
+        });
+
+        resizeCanvas();
+        gameLoop();
+    </script>
+</body>
+</html>
